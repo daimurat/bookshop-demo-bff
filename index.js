@@ -17,6 +17,7 @@ const app = express();
 const httpServer = http.createServer(app);
 
 // 必要なbody parserミドルウェアを先に適用
+app.use(cors());
 app.use(bodyParser.json());
 
 // ApolloServer 初期化用の処理
@@ -31,8 +32,6 @@ await server.start()
 // サーバーをマウントするパスの指定
 app.use(
   '/graphql',
-  cors(),
-  // bodyParser.json(),
   expressMiddleware(server, {
     context: async ({ req }) => {
         return {
