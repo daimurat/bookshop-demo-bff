@@ -45,28 +45,36 @@ app.use(
 );
 
 // REST APIのエンドポイント
-app.post('/recommendation', async (req, res) => {
-  try {
-    console.log('Received request:', req.body);
-    const { query } = req.body;
-    if (!query) {
-      return res.status(400).json({ error: 'Missing query in request body' });
+const assistantUri = process.env.ASSISTANT_CLIENT_URI
+  ? `http://${process.env.ASSISTANT_CLIENT_URI}`
+  : 'http://localhost:9000';
+app.post(
+  '/recommendation',
+  async (req, res) => {
+    try {
+      if (!req.body) {
+        return res.status(400).json({ error: 'Missing query in request body' });
+      }
+      const { query } = req.body;
+      console.log('Received request:', { query });
+      
+      const response = await fetch(`${assistantUri}/ask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+      if (!response.ok) {
+        return res.status(response.status).json({ error: 'Failed to fetch from /ask' });
+      }
+      const data = await response.json();
+      console.log('Response from /ask:', data);
+      res.json(data);
+    } catch (err) {
+      console.error('Error in /recommendation:', err);
+      res.status(500).json({ error: err.message });
     }
-    const response = await fetch('http://localhost:8000/ask', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query })
-    });
-    if (!response.ok) {
-      return res.status(response.status).json({ error: 'Failed to fetch from /ask' });
-    }
-    const text = await response.text();
-    console.log('Response from /ask:', text);
-    res.send(text);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
-});
+);
 
 app.listen(4000)
 
